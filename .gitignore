@@ -1,0 +1,37 @@
+# Dependecies
+node_modules/
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Firebase & Secrets
+*.json
+.env
+.env.*
+!.env.example
+firebase-debug.log*
+.firebase/
+
+# Next.js
+.next/
+out/
+build/
+
+# Media and Large Files
+*.mp4
+*.zip
+*.tar.gz
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.gemini/
+
+# Artifacts
+artifacts/
+brain/
+scratch/
