@@ -1,135 +1,160 @@
-[![LinkedIn Post](https://img.shields.io/badge/LinkedIn-Reach_Out-blue?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/posts/bingidineshkumar18_promptwars-buildwithai-googleantigravity-ugcPost-7450873876131024896-ggH4?utm_source=share&utm_medium=member_desktop&rcm=ACoAAFTRObMBqDe-RsBzglkKQbLnzvIV4pJ3ILQ)
+# RoastMyStack
 
-# Roast-My-Stack 🔥
-> **AI Code Roaster with Brutal Honest Feedback**
-> Built for PromptWars Virtual | Google Antigravity + Google AI Services
+**Challenge Vertical: Developer Tools**
 
----
+> An AI-powered code reviewer that gives developers the brutal, honest feedback
+> a senior engineer would — instantly, on demand, at any scale.
 
-## 🚀 What is RoastMyStack?
-
-**RoastMyStack** is a web application where developers can paste a GitHub repo URL or a raw code snippet to receive two things:
-
-1.  **A Brutal, Honest Roast:** Written in the voice of a senior engineer with zero patience — identifying bad patterns, lazy naming, security holes, architectural sins, and code smells.
-2.  **A Structured Fix Plan:** Precise, actionable steps to fix every issue raised in the roast, ranked by severity.
-
-Every roast is scored across 6 evaluation axes that mirror the PromptWars AI scoring criteria. It’s designed for developers who want honest feedback without the social cost of asking a colleague.
+[![Live Demo](https://img.shields.io/badge/Live-Demo-FF4D00?style=flat)](https://roastmystack.web.app)
+[![Cloud Run](https://img.shields.io/badge/Backend-Cloud%20Run-4285F4?style=flat)](https://roastmystack-api-r2itus4u2a-uc.a.run.app)
 
 ---
 
-## 🔥 Features
+## Problem Statement
 
--   **Three Intensity Levels:** Select from "Junior Review", "Senior Review", or "Staff Engineer Wrath".
--   **GitHub Integration:** Fetches repository content directly via GitHub API.
--   **Shareable Roasts:** Every roast session is saved to Firestore and generates a unique, shareable URL.
--   **Improvement Tracking:** Log in with GitHub to save your roast history and track your improvement over time.
--   **AI Grounding:** Fix suggestions are grounded against real-time Google Search results for current best practices.
+Developers — especially students and solo builders — lack access to fast, honest,
+on-demand code review. Manual peer review is slow, socially costly, and unavailable
+outside team environments. This creates a gap between code written and
+production-quality code. The result: security vulnerabilities ship, bad patterns
+persist, and developers don't grow as fast as they could.
 
----
+## Solution
 
-## 🛠️ How We Built It (Tech Stack)
+RoastMyStack uses Google Gemini 2.5 Pro to deliver instant, structured code analysis
+that mirrors real senior engineer feedback. Users paste a GitHub repo URL or raw code
+snippet, select a roast intensity, and receive:
 
-RoastMyStack leverages a cutting-edge stack with deep integration of Google Cloud and AI services:
+1. A brutal but accurate roast identifying every significant issue
+2. A severity-ranked issue list (Critical / High / Medium / Low)
+3. A numbered fix plan with specific, actionable remediation steps
+4. A score across 5 quality dimensions
+5. A shareable unique URL for every roast session
 
-### **Google AI Services**
--   **Gemini 2.5 Pro (Core Engine):** Used for code analysis, roast generation, fix plan creation, and severity scoring.
--   **Gemini Search Grounding:** Grounding fix suggestions against live Google Search results (e.g., OWASP guidelines).
--   **Vertex AI / AI Studio:** Accessing the long-context Gemini models.
+## How It Works
 
-### **Backend (API Layer)**
--   **FastAPI (Python 3.12):** A high-performance web framework for the API.
--   **Google Cloud Run:** Serverless hosting that scales with demand.
--   **Firebase Admin SDK:** Server-side interaction with Firestore and Auth.
--   **Google Artifact Registry:** Stores Docker images for deployment.
-
-### **Frontend (UI Layer)**
--   **Next.js 15 (App Router):** Latest React framework for a fast, SEO-friendly interface.
--   **Tailwind CSS:** Modern utility-first styling for a sleek, responsive design.
--   **Firebase Auth (GitHub OAuth):** Secure social authentication.
--   **Cloud Firestore:** Real-time database for roast sessions and history.
-
----
-
-## 📐 Architecture
-
-```mermaid
-graph TD
-    User([User Browser]) -->|Next.js 15 UI| Frontend[Frontend Web App]
-    Frontend -->|GitHub OAuth| Auth[Firebase Auth]
-    Frontend -->|Store/Retrieve Roasts| DB[(Cloud Firestore)]
-    
-    Frontend -->|POST /api/roast| API[FastAPI on Cloud Run]
-    API -->|Fetch Content| GitHub[GitHub API]
-    API -->|Analyze & Roast| Gemini[Gemini 2.5 Pro]
-    Gemini -->|Grounding| Search[Google Search Grounding]
-    
-    subgraph Google Cloud Platform
-        API
-        DB
-        Auth
-    end
+```
+User Input (GitHub URL or code snippet)
+        ↓
+FastAPI Backend (Google Cloud Run)
+        ↓
+GitHub API → fetch repo file contents (if URL provided)
+        ↓
+Gemini 2.5 Pro (Gemini API) → structured code analysis
+Gemini Search Grounding → verify best practices in real-time
+Gemini text-embedding-004 → generate code embedding for similarity
+        ↓
+Structured JSON response: { roast, issues[], fixPlan[], scores{}, embedding[] }
+        ↓
+Cloud Firestore → store session with unique roast ID
+        ↓
+Next.js Frontend → animated results page with shareable URL
 ```
 
----
+## Google Services Used
 
-## 🔄 How It Works — User Flow
+| Service | Purpose |
+|---|---|
+| **Gemini 2.5 Pro** (Gemini API) | Core code analysis, roast generation, fix plan |
+| **Gemini Search Grounding** | Real-time best practice verification |
+| **text-embedding-004** | Code embedding for similarity matching |
+| **Cloud Firestore** | Roast session storage, shareable links, user history |
+| **Firebase Authentication** | GitHub OAuth login, session management |
+| **Google Cloud Run** | Serverless FastAPI backend deployment |
+| **Google Artifact Registry** | Docker image storage for Cloud Run |
+| **Google Cloud Logging** | Structured observability and request tracking |
 
-1.  **Input:** User pastes a GitHub URL or raw code.
-2.  **Selection:** Chooses roast intensity (Junior/Senior/Staff).
-3.  **Processing:** 
-    - Cloud Run fetches the repo content.
-    - Code is sent to Gemini 2.5 Pro with a "Brutal Senior Engineer" persona instruction.
-    - Gemini returns a structured JSON containing the roast text, issue list, fix plan, and scores.
-4.  **Display:** Frontend renders an animated roast reveal and an interactive fix plan card.
-5.  **Sharing:** A unique Firestore-backed URL is generated for sharing on social media.
+## Tech Stack
 
----
+- **Frontend:** Next.js 15 (App Router), TypeScript, Tailwind CSS
+- **Backend:** FastAPI, Python 3.12, deployed on Cloud Run
+- **AI:** Gemini 2.5 Pro, text-embedding-004, Search Grounding
+- **Database:** Cloud Firestore (Firebase)
+- **Auth:** Firebase Authentication (GitHub provider)
+- **Infra:** Google Cloud Run, Artifact Registry, Firebase App Hosting
 
-## ⚙️ Setup & Installation
+## Local Setup
 
 ### Prerequisites
-- Python 3.12+
 - Node.js 18+
-- Google Cloud Project with Gemini API enabled
-- Firebase Project
+- Python 3.12+
+- Google Cloud project with billing enabled
+- Firebase project
 
-### 1. Backend Setup
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-# Set up environment variables (GEMINI_API_KEY, FIREBASE_CREDENTIALS)
-uvicorn main:app --reload
-```
-
-### 2. Frontend Setup
+### Frontend
 ```bash
 cd frontend
 npm install
-# Set up .env.local with Firebase config
+cp .env.example .env.local
+# Fill in your Firebase config values
 npm run dev
 ```
 
----
+### Backend
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env
+# Fill in GEMINI_API_KEY and FIREBASE_SERVICE_ACCOUNT_JSON
+uvicorn main:app --reload
+```
 
-## 📊 Evaluation Criteria Coverage
+### Running Tests
+```bash
+# Backend tests
+cd backend && pytest tests/ -v
 
-| Criterion | How We Cover It |
-| :--- | :--- |
-| **Code Quality** | Gemini scores and critiques patterns explicitly. |
-| **Security** | AI identifies SQLi, secret exposure, and auth flaws. |
-| **Efficiency** | Performance issues (N+1 queries, loops) are flagged. |
-| **Testing** | Missing tests are called out in the fix plan. |
-| **Accessibility** | Built with semantic HTML and ARIA best practices. |
-| **Google Services** | Gemini, Firebase (Auth/Firestore), Cloud Run, Artifact Registry. |
+# Frontend tests
+cd frontend && npm test
+```
 
----
+### Environment Variables
 
-## 💬 Reach Out
+**frontend/.env.example:**
+```
+NEXT_PUBLIC_FIREBASE_API_KEY=your_key_here
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+```
 
-For questions about cloning this repo, how it works, or to see the story behind it, reach out directly on the LinkedIn post:
-👉 [**LinkedIn Post Link**](https://www.linkedin.com/posts/bingidineshkumar18_promptwars-buildwithai-googleantigravity-ugcPost-7450873876131024896-ggH4?utm_source=share&utm_medium=member_desktop&rcm=ACoAAFTRObMBqDe-RsBzglkKQbLnzvIV4pJ3ILQ)
+**backend/.env.example:**
+```
+GEMINI_API_KEY=your_gemini_api_key
+GOOGLE_CLOUD_PROJECT=your_gcp_project_id
+FIREBASE_SERVICE_ACCOUNT_JSON={}
+GITHUB_TOKEN=optional_for_higher_rate_limits
+ALLOWED_ORIGINS=http://localhost:3000
+```
 
----
-*Built with ❤️ using Google Antigravity & Google AI.*
+## Assumptions
+
+- Users provide either a valid public GitHub repository URL or raw source code
+- Gemini API key has sufficient quota for the roast generation (free tier is sufficient for hackathon use)
+- Firebase project has Firestore and Authentication enabled before running
+- Roast sessions are public by default (shareable links); login is optional for history
+
+## Project Structure
+
+```
+roastmystack/
+├── frontend/              # Next.js 15 App Router
+│   ├── src/
+│   │   ├── app/           # Pages and layouts
+│   │   ├── components/    # Reusable UI components
+│   │   └── lib/           # Firebase client, API helpers
+│   ├── __tests__/         # Frontend unit tests
+│   ├── package.json
+│   └── Dockerfile
+├── backend/               # FastAPI on Cloud Run
+│   ├── main.py            # App entry point, routes
+│   ├── roast.py           # Gemini integration
+│   ├── github_fetch.py    # GitHub repo content fetcher
+│   ├── firebase_admin_init.py  # Firestore + Auth admin
+│   ├── tests/             # Backend unit + integration tests
+│   ├── requirements.txt
+│   └── Dockerfile
+└── README.md
+```
