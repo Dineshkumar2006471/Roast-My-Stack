@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom'
 
@@ -11,17 +11,17 @@ describe('RoastInput Component', () => {
   describe('Initial render', () => {
     it('renders the GitHub URL tab by default', () => {
       render(<RoastInput onSubmit={mockOnSubmit} isLoading={false} />)
-      expect(screen.getByRole('button', { name: /github url/i })).toBeInTheDocument()
+      expect(screen.getByRole('tab', { name: /github url/i })).toBeInTheDocument()
     })
 
     it('renders the Paste Code tab', () => {
       render(<RoastInput onSubmit={mockOnSubmit} isLoading={false} />)
-      expect(screen.getByRole('button', { name: /paste code/i })).toBeInTheDocument()
+      expect(screen.getByRole('tab', { name: /paste code/i })).toBeInTheDocument()
     })
 
     it('submit button is disabled when input is empty', () => {
       render(<RoastInput onSubmit={mockOnSubmit} isLoading={false} />)
-      const button = screen.getByRole('button', { name: /roast my code/i })
+      const button = screen.getByRole('button', { name: /Submit code for AI review/i })
       expect(button).toBeDisabled()
     })
 
@@ -37,7 +37,7 @@ describe('RoastInput Component', () => {
       render(<RoastInput onSubmit={mockOnSubmit} isLoading={false} />)
       const input = screen.getByPlaceholderText(/github.com/i)
       await userEvent.type(input, 'https://github.com/user/repo')
-      const button = screen.getByRole('button', { name: /roast my code/i })
+      const button = screen.getByRole('button', { name: /Submit code for AI review/i })
       expect(button).not.toBeDisabled()
     })
   })
