@@ -57,7 +57,7 @@ class TestRoastInputValidation:
         """Only valid intensity values should be accepted."""
         valid_intensities = ["junior", "senior", "staff"]
         for intensity in valid_intensities:
-            with patch("roast.roast_code_or_repo", new_callable=AsyncMock) as mock_roast:
+            with patch("main.roast_code_or_repo", new_callable=AsyncMock) as mock_roast:
                 mock_roast.return_value = {
                     "roast": "Test roast",
                     "issues": [],
@@ -91,7 +91,7 @@ class TestRoastInputValidation:
 class TestRoastGeneration:
     def test_roast_returns_expected_structure(self):
         """Roast response must contain all required fields."""
-        with patch("roast.roast_code_or_repo", new_callable=AsyncMock) as mock_roast:
+        with patch("main.roast_code_or_repo", new_callable=AsyncMock) as mock_roast:
             mock_roast.return_value = {
                 "roast": "Your variable names are crimes against humanity.",
                 "issues": [
@@ -135,7 +135,7 @@ class TestRoastGeneration:
 
     def test_scores_are_numeric_and_in_range(self):
         """All scores must be integers between 0 and 100."""
-        with patch("roast.roast_code_or_repo", new_callable=AsyncMock) as mock_roast:
+        with patch("main.roast_code_or_repo", new_callable=AsyncMock) as mock_roast:
             mock_roast.return_value = {
                 "roast": "This code hurts.",
                 "issues": [],

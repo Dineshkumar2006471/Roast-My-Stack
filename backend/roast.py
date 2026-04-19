@@ -32,13 +32,7 @@ class RoastResponse(BaseModel):
     fixPlan: List[FixStep] = Field(description="Structured plan to fix the issues")
     scores: Scores = Field(description="Numeric scores evaluating the code")
 
-def get_system_prompt(intensity: str) -> str:
-    if intensity == "junior":
-        return "You are a senior software engineer acting as a mentor. Be gentle but firm in your code review. Highlight mistakes but encourage the developer. Roast them lightly."
-    elif intensity == "senior":
-        return "You are a busy senior engineer giving a direct, no-nonsense code review. You have no time for fluff. Point out bad patterns, security holes, and code smells clearly."
-    else: # staff
-        return "You are a merciless staff engineer doing a brutal code review. You have zero patience for bad code. Roast the code intensely. Use wit, sarcasm, and be brutally honest. Point out architectural sins and lazy choices."
+from context_engine import build_code_context, build_analysis_prompt
 
 async def roast_code_or_repo(source_type: str, content: str, intensity: str) -> dict:
     if not PROJECT_ID:
@@ -55,33 +49,50 @@ async def roast_code_or_repo(source_type: str, content: str, intensity: str) -> 
         location=LOCATION
     )
     
-    system_instruction = get_system_prompt(intensity)
-    
     import logging
     logger = logging.getLogger(__name__)
+
+    # Step 1: Detect user context using the Context Engine
+    context = build_code_context(code_text, intensity)
     
-    # 1. Generate text embeddings (satisfies 5a requirement)
+    logger.info(f"Roast request processed: lang={context.language.value}, "
+                f"complexity={context.complexity_score}, "
+                f"intensity={context.intensity.value}, "
+                f"lines={context.line_count}")
+
+    # Step 2: Build context-specific prompt
+    prompt = build_analysis_prompt(context, code_text)
+
+    # Note: text-embedding-004 logic remains here
+    embedding_values = None
     try:
         embed_resp = client.models.embed_content(
             model='text-embedding-004',
             contents=code_text[:8000] # Cap size for embedding
         )
-        logger.info(f"Generated text embeddings for input. Values count: {len(embed_resp.embeddings[0].values)}")
+        embedding_values = embed_resp.embeddings[0].values
+        logger.info(f"Generated text embeddings for input. Values count: {len(embedding_values)}")
     except Exception as e:
         logger.warning(f"Failed to generate embeddings: {e}")
 
-    prompt = f"Analyze the following code and provide the output strictly adhering to the JSON schema:\n\n{code_text}"
-    
+    # Step 3: Call Gemini with grounding
     response = client.models.generate_content(
         model='gemini-2.5-pro',
         contents=prompt,
         config=types.GenerateContentConfig(
-            system_instruction=system_instruction,
             response_mime_type="application/json",
             response_schema=RoastResponse,
             tools=[{"googleSearch": {}}],
         ),
     )
-    
     import json
-    return json.loads(response.text)
+    # Use exact logic to parse JSON response with potential markdown fences
+    raw = response.text.strip()
+    clean = raw.replace("```json", "").replace("```", "").strip()
+    result = json.loads(clean)
+    
+    # Step 5: Save generated embedding for similarity indexing
+    if embedding_values:
+        result["embedding"] = embedding_values
+
+    return result

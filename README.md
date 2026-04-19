@@ -1,160 +1,219 @@
 # RoastMyStack
 
 **Challenge Vertical: Developer Tools**
+**Persona: The Relentless Senior Engineer — A Smart, Dynamic Code Review Assistant**
 
-> An AI-powered code reviewer that gives developers the brutal, honest feedback
-> a senior engineer would — instantly, on demand, at any scale.
+> An AI assistant that adapts its analysis, depth, and feedback style to the
+> context of your code — giving you the honest, senior-level review that most
+> developers never get.
 
-[![Live Demo](https://img.shields.io/badge/Live-Demo-FF4D00?style=flat)](https://roastmystack.web.app)
-[![Cloud Run](https://img.shields.io/badge/Backend-Cloud%20Run-4285F4?style=flat)](https://roastmystack-api-r2itus4u2a-uc.a.run.app)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-FF4D00?style=for-the-badge)](https://roastmystack-main-u6tztid3wa-uc.a.run.app/)
+[![Vertical](https://img.shields.io/badge/Vertical-Developer%20Tools-4285F4?style=for-the-badge)]()
+[![Google Services](https://img.shields.io/badge/Google%20Services-7%20Integrated-34A853?style=for-the-badge)]()
 
 ---
 
-## Problem Statement
+## Challenge Vertical: Developer Tools
 
-Developers — especially students and solo builders — lack access to fast, honest,
-on-demand code review. Manual peer review is slow, socially costly, and unavailable
-outside team environments. This creates a gap between code written and
-production-quality code. The result: security vulnerabilities ship, bad patterns
-persist, and developers don't grow as fast as they could.
+### The Problem
 
-## Solution
+Junior and mid-level developers lack consistent access to honest, senior-level
+code review. Manual peer review is slow, socially costly, and inaccessible to
+solo builders and students. This gap between written code and production-quality
+code creates real-world consequences: security vulnerabilities ship, bad
+architectural patterns calcify, and developers stagnate.
 
-RoastMyStack uses Google Gemini 2.5 Pro to deliver instant, structured code analysis
-that mirrors real senior engineer feedback. Users paste a GitHub repo URL or raw code
-snippet, select a roast intensity, and receive:
+### The Solution: A Smart, Dynamic Assistant
 
-1. A brutal but accurate roast identifying every significant issue
-2. A severity-ranked issue list (Critical / High / Medium / Low)
-3. A numbered fix plan with specific, actionable remediation steps
-4. A score across 5 quality dimensions
-5. A shareable unique URL for every roast session
+RoastMyStack is not a static analysis tool. It is a **smart assistant that makes
+logical decisions based on user context** at every stage of the review process.
+
+The assistant:
+1. **Detects input context** — GitHub URL vs raw code, language, file size,
+   repository structure
+2. **Adapts analysis depth** — based on detected code complexity and selected
+   experience level
+3. **Applies language-specific logic** — different heuristics for Python,
+   JavaScript, TypeScript, and more
+4. **Prioritizes issues by real-world severity** — not style preferences
+5. **Generates a contextual fix plan** — specific to the exact issues found,
+   with before/after code examples
+
+See [VERTICAL.md](./VERTICAL.md) for the full decision-making logic breakdown.
+
+---
 
 ## How It Works
 
 ```
-User Input (GitHub URL or code snippet)
-        ↓
-FastAPI Backend (Google Cloud Run)
-        ↓
-GitHub API → fetch repo file contents (if URL provided)
-        ↓
-Gemini 2.5 Pro (Gemini API) → structured code analysis
-Gemini Search Grounding → verify best practices in real-time
-Gemini text-embedding-004 → generate code embedding for similarity
-        ↓
-Structured JSON response: { roast, issues[], fixPlan[], scores{}, embedding[] }
-        ↓
-Cloud Firestore → store session with unique roast ID
-        ↓
-Next.js Frontend → animated results page with shareable URL
+┌─────────────────────────────────────────────────────────┐
+│  User Input: GitHub URL or Code Snippet + Intensity     │
+└────────────────────────┬────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────┐
+│  Context Detection Layer (FastAPI — Cloud Run)           │
+│  • Input type: URL vs snippet                            │
+│  • Language auto-detection                               │
+│  • Code complexity scoring                               │
+│  • Repository structure analysis (if URL)               │
+└────────────────────────┬────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────┐
+│  Adaptive Prompt Construction                            │
+│  • Selects analysis depth based on complexity + level    │
+│  • Applies language-specific rule sets                   │
+│  • Sets severity weighting based on code patterns found  │
+└────────────────────────┬────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────┐
+│  Gemini 2.5 Pro — Structured Code Analysis               │
+│  + Search Grounding (real-time best practice lookup)     │
+│  + text-embedding-004 (similarity indexing)              │
+└────────────────────────┬────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────┐
+│  Structured Output:                                      │
+│  roast | issues[] | fixPlan[] | scores{} | context{}     │
+└────────────────────────┬────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────┐
+│  Firestore — Session storage, shareable URL generation   │
+│  Cloud Logging — Observability, request tracking         │
+└─────────────────────────────────────────────────────────┘
 ```
 
-## Google Services Used
+## Contextual Decision Making — Core Logic
 
-| Service | Purpose |
+The assistant's behavior changes based on user context. This is the smart
+assistant layer, not just a prompt wrapper.
+
+### Language-Specific Analysis
+
+```python
+# backend/context_engine.py
+
+LANGUAGE_RULES = {
+    "python": [
+        "Check for missing type hints on public functions",
+        "Verify context managers used for file/resource handling",
+        "Check for bare except clauses",
+        "Verify f-strings over .format() for modern Python",
+        "Check for mutable default arguments",
+    ],
+    "javascript": [
+        "Check for == vs === comparisons",
+        "Verify async/await error handling with try/catch",
+        "Check for var usage (should be const/let)",
+        "Identify potential null/undefined access patterns",
+        "Check for console.log statements left in production code",
+    ],
+    "typescript": [
+        "Check for 'any' type usage",
+        "Verify strict null checks are respected",
+        "Check for proper interface vs type usage",
+        "Identify missing return type annotations",
+    ],
+    "general": [
+        "Security: injection risks, exposed secrets, auth issues",
+        "Naming: variables, functions, classes must be descriptive",
+        "Structure: single responsibility, appropriate abstractions",
+        "Error handling: all failure paths must be handled",
+    ]
+}
+
+def get_analysis_rules(language: str, complexity_score: int) -> list[str]:
+    """
+    Logical decision: selects which rules to apply based on
+    detected language and code complexity score.
+    High complexity code gets all rules.
+    Low complexity code focuses on critical issues only.
+    """
+    base_rules = LANGUAGE_RULES.get("general", [])
+    lang_rules = LANGUAGE_RULES.get(language.lower(), [])
+
+    if complexity_score > 70:
+        return base_rules + lang_rules
+    elif complexity_score > 40:
+        return base_rules + lang_rules[:3]
+    else:
+        return base_rules
+```
+
+### Intensity-Based Persona Adaptation
+
+```python
+INTENSITY_PERSONAS = {
+    "junior": {
+        "tone": "educational but direct",
+        "focus": "explain why each issue matters, use analogies",
+        "depth": "surface-level patterns and common beginner mistakes",
+        "output_style": "constructive with clear before/after examples"
+    },
+    "senior": {
+        "tone": "blunt and professional",
+        "focus": "architectural issues, maintainability, production risks",
+        "depth": "systemic patterns, not just individual lines",
+        "output_style": "honest assessment with prioritized fix plan"
+    },
+    "staff": {
+        "tone": "merciless and precise",
+        "focus": "scalability, security posture, team impact, tech debt",
+        "depth": "full architectural review, long-term consequences",
+        "output_style": "executive-level assessment with immediate action items"
+    }
+}
+```
+
+## Google Services Integration
+
+| Service | Role in Assistant Logic |
 |---|---|
-| **Gemini 2.5 Pro** (Gemini API) | Core code analysis, roast generation, fix plan |
-| **Gemini Search Grounding** | Real-time best practice verification |
-| **text-embedding-004** | Code embedding for similarity matching |
-| **Cloud Firestore** | Roast session storage, shareable links, user history |
-| **Firebase Authentication** | GitHub OAuth login, session management |
-| **Google Cloud Run** | Serverless FastAPI backend deployment |
-| **Google Artifact Registry** | Docker image storage for Cloud Run |
-| **Google Cloud Logging** | Structured observability and request tracking |
+| **Gemini 2.5 Pro** | Core analysis engine — contextual code review |
+| **Gemini Search Grounding** | Real-time best practice lookup during analysis |
+| **text-embedding-004** | Code vector embedding for session similarity |
+| **Cloud Firestore** | Session persistence, shareable roast URLs |
+| **Firebase Authentication** | GitHub OAuth, user history tracking |
+| **Google Cloud Run** | Serverless backend — scales to zero |
+| **Google Cloud Logging** | Structured request observability |
 
 ## Tech Stack
 
-- **Frontend:** Next.js 15 (App Router), TypeScript, Tailwind CSS
-- **Backend:** FastAPI, Python 3.12, deployed on Cloud Run
+- **Frontend:** Next.js 15, TypeScript, Tailwind CSS
+- **Backend:** FastAPI, Python 3.12, Google Cloud Run
 - **AI:** Gemini 2.5 Pro, text-embedding-004, Search Grounding
-- **Database:** Cloud Firestore (Firebase)
-- **Auth:** Firebase Authentication (GitHub provider)
-- **Infra:** Google Cloud Run, Artifact Registry, Firebase App Hosting
+- **Database:** Cloud Firestore
+- **Auth:** Firebase Auth (GitHub provider)
+- **Observability:** Google Cloud Logging
 
 ## Local Setup
-
-### Prerequisites
-- Node.js 18+
-- Python 3.12+
-- Google Cloud project with billing enabled
-- Firebase project
 
 ### Frontend
 ```bash
 cd frontend
 npm install
 cp .env.example .env.local
-# Fill in your Firebase config values
 npm run dev
 ```
 
 ### Backend
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# Fill in GEMINI_API_KEY and FIREBASE_SERVICE_ACCOUNT_JSON
 uvicorn main:app --reload
 ```
 
-### Running Tests
+### Tests
 ```bash
-# Backend tests
 cd backend && pytest tests/ -v
-
-# Frontend tests
 cd frontend && npm test
-```
-
-### Environment Variables
-
-**frontend/.env.example:**
-```
-NEXT_PUBLIC_FIREBASE_API_KEY=your_key_here
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
-```
-
-**backend/.env.example:**
-```
-GEMINI_API_KEY=your_gemini_api_key
-GOOGLE_CLOUD_PROJECT=your_gcp_project_id
-FIREBASE_SERVICE_ACCOUNT_JSON={}
-GITHUB_TOKEN=optional_for_higher_rate_limits
-ALLOWED_ORIGINS=http://localhost:3000
 ```
 
 ## Assumptions
 
-- Users provide either a valid public GitHub repository URL or raw source code
-- Gemini API key has sufficient quota for the roast generation (free tier is sufficient for hackathon use)
-- Firebase project has Firestore and Authentication enabled before running
-- Roast sessions are public by default (shareable links); login is optional for history
-
-## Project Structure
-
-```
-roastmystack/
-├── frontend/              # Next.js 15 App Router
-│   ├── src/
-│   │   ├── app/           # Pages and layouts
-│   │   ├── components/    # Reusable UI components
-│   │   └── lib/           # Firebase client, API helpers
-│   ├── __tests__/         # Frontend unit tests
-│   ├── package.json
-│   └── Dockerfile
-├── backend/               # FastAPI on Cloud Run
-│   ├── main.py            # App entry point, routes
-│   ├── roast.py           # Gemini integration
-│   ├── github_fetch.py    # GitHub repo content fetcher
-│   ├── firebase_admin_init.py  # Firestore + Auth admin
-│   ├── tests/             # Backend unit + integration tests
-│   ├── requirements.txt
-│   └── Dockerfile
-└── README.md
-```
+- Users submit either a valid public GitHub repo URL or raw source code
+- Language is auto-detected; users do not need to specify it manually
+- The assistant adapts its review depth to detected code complexity
+- Roast sessions are publicly accessible via shareable URL by default
+- Firebase Auth login is optional — required only for history persistence
