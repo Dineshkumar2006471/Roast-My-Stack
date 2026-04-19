@@ -4,6 +4,74 @@ import asyncio
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
+# Valid code file extensions for analysis
+VALID_EXTENSIONS = {
+    ".py", ".js", ".jsx", ".ts", ".tsx", ".html",
+    ".css", ".java", ".go", ".rs", ".cpp", ".c",
+    ".rb", ".json", ".md"
+}
+
+# Paths to skip when scanning repositories
+SKIP_PATTERNS = [
+    "node_modules/", ".git/", "venv/", ".venv/",
+    "__pycache__/", "dist/", "build/", ".next/"
+]
+
+# Binary / non-code file extensions to exclude
+NON_CODE_EXTENSIONS = {
+    ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico",
+    ".woff", ".woff2", ".ttf", ".eot",
+    ".mp4", ".mp3", ".wav", ".avi",
+    ".zip", ".tar", ".gz", ".rar",
+    ".pdf", ".doc", ".docx",
+    ".sqlite", ".db", ".pkl", ".bin", ".exe", ".dll",
+    ".pyc", ".pyo", ".so", ".o"
+}
+
+
+def parse_github_url(url: str) -> tuple[str, str]:
+    """
+    Parse a GitHub URL and return (owner, repo).
+    Raises ValueError for non-GitHub or malformed URLs.
+    """
+    if not url or not url.strip():
+        raise ValueError("URL cannot be empty")
+
+    url = url.strip().rstrip("/")
+
+    if "github.com" not in url:
+        raise ValueError(f"Invalid GitHub URL: {url}. Must be a github.com URL.")
+
+    # Remove protocol and github.com prefix
+    path = url.split("github.com/")[-1]
+    parts = path.split("/")
+
+    if len(parts) < 2 or not parts[0] or not parts[1]:
+        raise ValueError(f"Invalid GitHub URL: {url}. Must be in format https://github.com/owner/repo")
+
+    owner = parts[0]
+    repo = parts[1]
+
+    return owner, repo
+
+
+def is_code_file(filename: str) -> bool:
+    """Check if a file is a source code file based on extension."""
+    ext = os.path.splitext(filename)[1].lower()
+    if ext in NON_CODE_EXTENSIONS:
+        return False
+    if ext in VALID_EXTENSIONS:
+        return True
+    return False
+
+
+def should_skip_path(path: str) -> bool:
+    """Check if a file path should be skipped during repo scanning."""
+    for pattern in SKIP_PATTERNS:
+        if pattern in path:
+            return True
+    return False
+
 async def fetch_github_repo(repo_url: str) -> str:
     """
     Fetches the content of a GitHub repository given its URL.
