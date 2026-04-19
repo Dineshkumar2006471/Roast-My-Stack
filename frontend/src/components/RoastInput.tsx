@@ -26,9 +26,14 @@ export default function RoastInput({ onSubmit, isLoading }: RoastInputProps) {
       <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-[var(--neon-green)] rounded-full mix-blend-multiply filter blur-[128px] opacity-20"></div>
 
       <div className="relative z-10">
-        <div className="flex bg-black/40 p-1 rounded-lg w-fit mx-auto mb-8 border border-white/5">
+        <div className="flex bg-black/40 p-1 rounded-lg w-fit mx-auto mb-8 border border-white/5" role="tablist" aria-label="Code input method">
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'github'}
+            aria-controls="github-panel"
+            id="github-tab"
+            tabIndex={activeTab === 'github' ? 0 : -1}
             onClick={() => setActiveTab("github")}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all duration-300 ${
               activeTab === "github"
@@ -41,6 +46,11 @@ export default function RoastInput({ onSubmit, isLoading }: RoastInputProps) {
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'snippet'}
+            aria-controls="snippet-panel"
+            id="snippet-tab"
+            tabIndex={activeTab === 'snippet' ? 0 : -1}
             onClick={() => setActiveTab("snippet")}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all duration-300 ${
               activeTab === "snippet"
@@ -55,20 +65,29 @@ export default function RoastInput({ onSubmit, isLoading }: RoastInputProps) {
 
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-400 uppercase tracking-wider font-mono">
+            <label htmlFor={activeTab === "github" ? "github-url-input" : "code-textarea"} className="text-sm font-medium text-gray-400 uppercase tracking-wider font-mono">
               {activeTab === "github" ? "Repository Link" : "Source Code"}
             </label>
             {activeTab === "github" ? (
-              <input
-                type="url"
+              <div role="tabpanel" id="github-panel" aria-labelledby="github-tab" hidden={activeTab !== 'github'}>
+                <input
+                  id="github-url-input"
+                  type="url"
+                  aria-label="GitHub repository URL"
+                  aria-required="true"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="https://github.com/owner/repo"
                 className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--neon-green)] focus:ring-1 focus:ring-[var(--neon-green)] transition-all font-mono"
                 required
               />
+              </div>
             ) : (
+              <div role="tabpanel" id="snippet-panel" aria-labelledby="snippet-tab" hidden={activeTab !== 'snippet'}>
               <textarea
+                id="code-textarea"
+                aria-label="Code snippet for review"
+                aria-required="true"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="function doSomethingBad() { ... }"
@@ -76,14 +95,15 @@ export default function RoastInput({ onSubmit, isLoading }: RoastInputProps) {
                 className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-[var(--electric-purple)] focus:ring-1 focus:ring-[var(--electric-purple)] transition-all font-mono resize-none"
                 required
               />
+              </div>
             )}
           </div>
 
-          <div className="space-y-4">
-            <label className="text-sm font-medium text-gray-400 uppercase tracking-wider font-mono">
+          <fieldset className="space-y-4">
+            <legend className="text-sm font-medium text-gray-400 uppercase tracking-wider font-mono mb-2" id="intensity-legend">
               Roast Intensity
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            </legend>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" role="radiogroup" aria-labelledby="intensity-legend">
               <label
                 className={`cursor-pointer flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-300 ${
                   intensity === "junior"
@@ -144,15 +164,17 @@ export default function RoastInput({ onSubmit, isLoading }: RoastInputProps) {
                 <span className="text-xs opacity-70 text-center">Brutal & merciless.</span>
               </label>
             </div>
-          </div>
+          </fieldset>
 
           <button
             type="submit"
+            aria-label="Submit code for AI review"
+            aria-busy={isLoading}
             disabled={isLoading || !content.trim()}
             className="w-full bg-white text-black hover:bg-gray-200 disabled:bg-white/20 disabled:text-white/40 font-bold py-4 px-8 rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-95 glow-border relative overflow-hidden"
           >
             {isLoading ? (
-              <span className="flex items-center justify-center gap-3">
+              <span className="flex items-center justify-center gap-3" aria-live="polite" aria-atomic="true">
                 <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />

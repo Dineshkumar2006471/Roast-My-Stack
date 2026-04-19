@@ -39,7 +39,7 @@ export default function Home() {
     <div className="text-on-surface antialiased bg-surface min-h-screen">
       <Navbar />
 
-      <main className="pt-32 pb-24">
+      <main className="pt-32 pb-24" id="main-content" role="main" aria-label="Code roast results">
         {/* Hero Section */}
         <section className="py-24 relative overflow-hidden flex flex-col items-center justify-center text-center px-4">
           <div className="absolute inset-0 pointer-events-none flex justify-center items-center opacity-10">
@@ -135,34 +135,34 @@ export default function Home() {
 
         {/* Results Section */}
         {result && (
-          <section id="results" className="max-w-[1200px] mx-auto px-4 py-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <section id="results" className="max-w-[1200px] mx-auto px-4 py-16 animate-in fade-in slide-in-from-bottom-8 duration-700" aria-label="Analysis Results">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* The Roast Card */}
-              <div className="col-span-1 md:col-span-2 bg-surface-container-lowest rounded-xl p-8 card-hover transition-all duration-300 ambient-shadow flex flex-col min-h-[500px]">
+              <div className="col-span-1 md:col-span-2 bg-surface-container-lowest rounded-xl p-8 card-hover transition-all duration-300 ambient-shadow flex flex-col min-h-[500px]" aria-labelledby="roast-heading">
                 <div className="flex items-center space-x-3 mb-6">
-                  <span className="material-symbols-outlined text-secondary text-2xl">local_fire_department</span>
-                  <h3 className="text-xl font-bold tracking-tight text-on-surface">The Roast</h3>
+                  <span className="material-symbols-outlined text-secondary text-2xl" aria-hidden="true">local_fire_department</span>
+                  <h2 id="roast-heading" className="text-xl font-bold tracking-tight text-on-surface">The Roast</h2>
                 </div>
-                <div className="flex-grow bg-inverse-surface rounded-lg p-6 font-mono text-sm text-inverse-on-surface shadow-inner whitespace-pre-wrap leading-relaxed">
+                <blockquote className="flex-grow bg-inverse-surface rounded-lg p-6 font-mono text-sm text-inverse-on-surface shadow-inner whitespace-pre-wrap leading-relaxed" aria-label="AI code review">
                   <div className="text-secondary-fixed-dim/80 mb-4 italic border-b border-white/5 pb-2">
                     "Detected some major architectural sins. Pulling up the red marker..."
                   </div>
                   {result.roast}
-                </div>
+                </blockquote>
               </div>
 
               {/* The Scores Card */}
               <ScoreBoard scores={result.scores} />
 
               {/* The Fix Plan Card */}
-              <div className="col-span-1 md:col-span-3 bg-surface-container-lowest rounded-xl p-8 card-hover transition-all duration-300 ambient-shadow">
+              <div className="col-span-1 md:col-span-3 bg-surface-container-lowest rounded-xl p-8 card-hover transition-all duration-300 ambient-shadow" aria-labelledby="fixplan-heading">
                 <div className="flex items-center space-x-3 mb-8">
-                  <span className="material-symbols-outlined text-tertiary text-2xl">construction</span>
-                  <h3 className="text-xl font-bold tracking-tight text-on-surface">The Fix Plan</h3>
+                  <span className="material-symbols-outlined text-tertiary text-2xl" aria-hidden="true">construction</span>
+                  <h2 id="fixplan-heading" className="text-xl font-bold tracking-tight text-on-surface">The Fix Plan</h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <ol className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" aria-label="Ordered fix plan">
                   {result.fixPlan.map((step, idx) => (
-                    <div key={idx} className="p-6 rounded-xl bg-surface-container-low border border-outline-variant/20 hover:border-primary/30 transition-colors">
+                    <li key={idx} className="p-6 rounded-xl bg-surface-container-low border border-outline-variant/20 hover:border-primary/30 transition-colors">
                       <div className="flex items-center gap-3 mb-4">
                         <span className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm">
                           {step.priority}
@@ -172,9 +172,9 @@ export default function Home() {
                       <p className="text-sm text-on-surface-variant leading-relaxed italic">
                         "{step.fix}"
                       </p>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ol>
               </div>
             </div>
           </section>
