@@ -1,6 +1,7 @@
 import os
 import httpx
 import asyncio
+from urllib.parse import urlparse
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
@@ -157,3 +158,5 @@ async def fetch_github_repo(repo_url: str) -> str:
             final_code = final_code[:200000] + "\n... [TRUNCATED] ..."
 
         return final_code
+
+fetch_github_code = fetch_github_repo

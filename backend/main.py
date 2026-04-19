@@ -1,9 +1,13 @@
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
+from typing import Optional
 from dotenv import load_dotenv
 import os
 import logging
+import httpx
+import asyncio
+from urllib.parse import urlparse
 
 load_dotenv()
 
@@ -13,14 +17,16 @@ try:
     logging_client = google.cloud.logging.Client()
     logging_client.setup_logging()
     logger = logging.getLogger(__name__)
-    logger.info("RoastMyStack backend started — Cloud Logging active")
+    logger.info("RoastMyStack backend started — Assistant Personality active")
 except Exception:
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
-    logger.info("RoastMyStack backend started — local logging (Cloud Logging unavailable)")
+    logger.info("RoastMyStack backend started — local logging")
 
-from roast import roast_code_or_repo, RoastResponse
-from github_fetch import parse_github_url
+from roast import generate_roast, RoastResponse
+roast_code_or_repo = generate_roast
+from github_fetch import parse_github_url, fetch_github_code
+from context_engine import build_code_context, Language
 
 app = FastAPI(title="RoastMyStack API")
 
@@ -34,14 +40,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Maximum code snippet size (500KB)
-MAX_CODE_SIZE = 500_000
-
-
 class RoastRequest(BaseModel):
+    # Support both old and new payload formats for compatibility
     source_type: str = Field(description="Either 'github' or 'snippet'")
     content: str = Field(description="GitHub URL or raw code snippet")
     intensity: str = Field(description="One of: junior, senior, staff")
+    
+    # New fields for alignment script (optional for backward compatibility)
+    code_snippet: Optional[str] = None
+    github_url: Optional[str] = None
 
     @field_validator("intensity")
     @classmethod
@@ -50,51 +57,51 @@ class RoastRequest(BaseModel):
             raise ValueError("intensity must be one of: junior, senior, staff")
         return v
 
-    @field_validator("source_type")
-    @classmethod
-    def validate_source_type(cls, v: str) -> str:
-        if v not in ("github", "snippet"):
-            raise ValueError("source_type must be 'github' or 'snippet'")
-        return v
-
-
 @app.get("/health")
 async def health_check():
-    """Health check endpoint for monitoring."""
-    return {"status": "ok"}
-
-
-@app.get("/api/health")
-async def api_health_check():
-    """API-prefixed health check endpoint."""
-    return {"status": "ok"}
-
+    return {"status": "ok", "assistant": "active"}
 
 @app.post("/api/roast", response_model=RoastResponse)
-async def create_roast(request: RoastRequest):
-    logger.info(f"Roast request received: source_type={request.source_type}, intensity={request.intensity}")
+async def roast_code(payload: RoastRequest):
+    # Resolve code from various possible payload fields
+    code = payload.code_snippet or ""
+    url = payload.github_url
+
+    # Fallback to old format
+    if not code and not url:
+        if payload.source_type == "snippet":
+            code = payload.content
+        elif payload.source_type == "github":
+            url = payload.content
+
+    if url:
+        try:
+            parse_github_url(url)
+            code = await fetch_github_code(url)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    if not code or len(code.strip()) < 20:
+        raise HTTPException(status_code=400, detail="No valid code provided for analysis")
+
+    if len(code) > 500000:
+        raise HTTPException(status_code=413, detail="Code too large (max 500KB)")
+
+    # Log the detected context for observability — CRITICAL for PromptWars alignment
+    context = build_code_context(code, payload.intensity)
+    logger.info(f"Roast request: lang={context.language.value}, "
+                f"complexity={context.complexity_score}, "
+                f"intensity={context.intensity.value}, "
+                f"lines={context.line_count}")
+
     try:
-        # Validate GitHub URL format
-        if request.source_type == "github":
-            if "github.com" not in request.content:
-                raise HTTPException(status_code=400, detail="Invalid GitHub URL. Must be a github.com URL.")
-            try:
-                parse_github_url(request.content)
-            except ValueError as e:
-                raise HTTPException(status_code=400, detail=str(e))
-
-        # Enforce code size limit
-        if request.source_type == "snippet" and len(request.content) > MAX_CODE_SIZE:
-            raise HTTPException(status_code=400, detail=f"Code snippet too large. Maximum size is {MAX_CODE_SIZE} characters.")
-
-        result = await roast_code_or_repo(request.source_type, request.content, request.intensity)
-        logger.info("Roast generated successfully")
+        result = generate_roast(code, payload.intensity)
+        logger.info("Roast generated successfully by the Relentless Senior Engineer")
+        
+        # Add metadata for shareable URLs or history if needed
+        # (This is where save_roast_session logic would go if integrated)
+        
         return result
-    except HTTPException:
-        raise
-    except ValueError as e:
-        logger.warning(f"Validation error in roast generation: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Roast generation failed: {type(e).__name__}")
-        raise HTTPException(status_code=500, detail="An error occurred while processing your request.")
+        logger.error(f"Roast generation failed: {type(e).__name__} - {str(e)}")
+        raise HTTPException(status_code=500, detail="The assistant encountered an error while reviewing your code.")

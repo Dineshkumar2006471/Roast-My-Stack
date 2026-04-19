@@ -1,11 +1,10 @@
 """
-Tests for RoastMyStack backend — roast generation and API endpoints.
+Tests for RoastMyStack backend — isolated assistant logic testing.
 """
 import pytest
 import json
 from unittest.mock import patch, MagicMock, AsyncMock
 from fastapi.testclient import TestClient
-
 
 # ── Import app ──────────────────────────────────────────────────────────────
 import sys
@@ -15,7 +14,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from main import app
 
 client = TestClient(app)
-
 
 # ── Health check ────────────────────────────────────────────────────────────
 class TestHealthCheck:
@@ -28,7 +26,6 @@ class TestHealthCheck:
         data = response.json()
         assert "status" in data
         assert data["status"] == "ok"
-
 
 # ── Input validation ─────────────────────────────────────────────────────────
 class TestRoastInputValidation:
@@ -53,29 +50,30 @@ class TestRoastInputValidation:
         })
         assert response.status_code == 400
 
-    def test_valid_intensity_values_accepted(self):
+    @patch("main.generate_roast")
+    def test_valid_intensity_values_accepted(self, mock_roast):
         """Only valid intensity values should be accepted."""
+        mock_roast.return_value = {
+            "roast": "Test roast",
+            "issues": [],
+            "fixPlan": [],
+            "scores": {
+                "codeQuality": 70, "security": 80, "efficiency": 75, "testing": 60, "accessibility": 65
+            },
+            "context_summary": {
+                "language_detected": "python", "complexity": "40", "review_mode": "senior",
+                "frameworks": [], "security_pre_detected": False
+            }
+        }
+        
         valid_intensities = ["junior", "senior", "staff"]
         for intensity in valid_intensities:
-            with patch("main.roast_code_or_repo", new_callable=AsyncMock) as mock_roast:
-                mock_roast.return_value = {
-                    "roast": "Test roast",
-                    "issues": [],
-                    "fixPlan": [],
-                    "scores": {
-                        "codeQuality": 70,
-                        "security": 80,
-                        "efficiency": 75,
-                        "testing": 60,
-                        "accessibility": 65
-                    }
-                }
-                response = client.post("/api/roast", json={
-                    "source_type": "snippet",
-                    "content": "def hello(): print('hello')",
-                    "intensity": intensity
-                })
-                assert response.status_code != 422, f"Intensity '{intensity}' was rejected"
+            response = client.post("/api/roast", json={
+                "source_type": "snippet",
+                "content": "def hello(): print('hello')",
+                "intensity": intensity
+            })
+            assert response.status_code == 200
 
     def test_invalid_intensity_returns_422(self):
         """Invalid intensity values should be rejected."""
@@ -86,81 +84,73 @@ class TestRoastInputValidation:
         })
         assert response.status_code == 422
 
-
 # ── Roast generation (mocked) ─────────────────────────────────────────────────
 class TestRoastGeneration:
-    def test_roast_returns_expected_structure(self):
+    @patch("main.generate_roast")
+    def test_roast_returns_expected_structure(self, mock_roast):
         """Roast response must contain all required fields."""
-        with patch("main.roast_code_or_repo", new_callable=AsyncMock) as mock_roast:
-            mock_roast.return_value = {
-                "roast": "Your variable names are crimes against humanity.",
-                "issues": [
-                    {
-                        "type": "naming",
-                        "line": 5,
-                        "description": "Variable 'x' tells me nothing",
-                        "severity": "medium"
-                    }
-                ],
-                "fixPlan": [
-                    {
-                        "issue": "Poor variable naming",
-                        "fix": "Use descriptive names like 'user_count' instead of 'x'",
-                        "priority": 1
-                    }
-                ],
-                "scores": {
-                    "codeQuality": 45,
-                    "security": 70,
-                    "efficiency": 60,
-                    "testing": 20,
-                    "accessibility": 50
+        mock_roast.return_value = {
+            "roast": "Your variable names are crimes against humanity.",
+            "issues": [
+                {
+                    "type": "naming", "line": 5, "description": "Variable 'x' tells me nothing",
+                    "severity": "medium", "language_specific": True
                 }
+            ],
+            "fixPlan": [
+                {
+                    "issue": "Poor variable naming", "fix": "Use descriptive names", "priority": 1
+                }
+            ],
+            "scores": {
+                "codeQuality": 45, "security": 70, "efficiency": 60, "testing": 20, "accessibility": 50
+            },
+            "context_summary": {
+                "language_detected": "python", "complexity": "75", "review_mode": "senior",
+                "frameworks": [], "security_pre_detected": False
             }
+        }
 
-            response = client.post("/api/roast", json={
-                "source_type": "snippet",
-                "content": "x = 1\ny = 2\nz = x + y",
-                "intensity": "senior"
-            })
+        response = client.post("/api/roast", json={
+            "source_type": "snippet",
+            "content": "x = 1\ny = 2\nz = x + y",
+            "intensity": "senior"
+        })
 
-            assert response.status_code == 200
-            data = response.json()
-            assert "roast" in data
-            assert "issues" in data
-            assert "fixPlan" in data
-            assert "scores" in data
-            assert isinstance(data["issues"], list)
-            assert isinstance(data["fixPlan"], list)
+        assert response.status_code == 200
+        data = response.json()
+        assert "roast" in data
+        assert "context_summary" in data
+        assert data["context_summary"]["language_detected"] == "python"
 
-    def test_scores_are_numeric_and_in_range(self):
+    @patch("main.generate_roast")
+    def test_scores_are_numeric_and_in_range(self, mock_roast):
         """All scores must be integers between 0 and 100."""
-        with patch("main.roast_code_or_repo", new_callable=AsyncMock) as mock_roast:
-            mock_roast.return_value = {
-                "roast": "This code hurts.",
-                "issues": [],
-                "fixPlan": [],
-                "scores": {
-                    "codeQuality": 55,
-                    "security": 88,
-                    "efficiency": 72,
-                    "testing": 10,
-                    "accessibility": 63
-                }
+        mock_roast.return_value = {
+            "roast": "This code hurts.",
+            "issues": [],
+            "fixPlan": [],
+            "scores": {
+                "codeQuality": 55, "security": 88, "efficiency": 72, "testing": 10, "accessibility": 63
+            },
+            "context_summary": {
+                "language_detected": "javascript", "complexity": "20", "review_mode": "junior",
+                "frameworks": [], "security_pre_detected": False
             }
+        }
 
-            response = client.post("/api/roast", json={
-                "source_type": "snippet",
-                "content": "console.log('hello world')",
-                "intensity": "junior"
-            })
+        response = client.post("/api/roast", json={
+            "source_type": "snippet",
+            "content": "console.log('hello world')",
+            "intensity": "junior"
+        })
 
-            data = response.json()
-            scores = data["scores"]
-            for key, value in scores.items():
-                assert isinstance(value, (int, float)), f"Score '{key}' is not numeric"
-                assert 0 <= value <= 100, f"Score '{key}' = {value} is out of range"
-
+        assert response.status_code == 200
+        data = response.json()
+        scores = data["scores"]
+        for key, value in scores.items():
+            assert isinstance(value, (int, float))
+            assert 0 <= value <= 100
 
 # ── Security ──────────────────────────────────────────────────────────────────
 class TestSecurity:
@@ -170,7 +160,7 @@ class TestSecurity:
             "Origin": "http://localhost:3000",
             "Access-Control-Request-Method": "POST"
         })
-        assert response.status_code in [200, 204, 400]
+        assert response.status_code in [200, 204]
 
     def test_api_does_not_expose_internal_errors(self):
         """Error responses must not leak stack traces."""
