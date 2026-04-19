@@ -39,11 +39,14 @@ def parse_github_url(url: str) -> tuple[str, str]:
 
     url = url.strip().rstrip("/")
 
-    if "github.com" not in url:
+    from urllib.parse import urlparse
+    import re
+    
+    parsed = urlparse(url)
+    if parsed.netloc != "github.com" and not parsed.netloc.endswith(".github.com"):
         raise ValueError(f"Invalid GitHub URL: {url}. Must be a github.com URL.")
-
-    # Remove protocol and github.com prefix
-    path = url.split("github.com/")[-1]
+    
+    path = parsed.path.strip("/")
     parts = path.split("/")
 
     if len(parts) < 2 or not parts[0] or not parts[1]:
@@ -77,14 +80,16 @@ async def fetch_github_repo(repo_url: str) -> str:
     Fetches the content of a GitHub repository given its URL.
     Returns a concatenated string of the contents of relevant files.
     """
-    # Parse URL to get owner and repo name
-    # e.g. https://github.com/owner/repo
-    parts = repo_url.rstrip('/').split('/')
-    if len(parts) < 2 or "github.com" not in repo_url:
-        raise ValueError("Invalid GitHub URL. Must be in format https://github.com/owner/repo")
+    parsed = urlparse(repo_url)
+    if parsed.netloc != "github.com" and not parsed.netloc.endswith(".github.com"):
+        raise ValueError("Invalid GitHub URL. Must be from github.com")
     
-    owner = parts[-2]
-    repo = parts[-1]
+    path_parts = parsed.path.strip('/').split('/')
+    if len(path_parts) < 2:
+        raise ValueError("Invalid GitHub URL. Must contain owner and repo.")
+    
+    owner = path_parts[-2]
+    repo = path_parts[-1]
     
     headers = {"Accept": "application/vnd.github.v3+json"}
     if GITHUB_TOKEN and GITHUB_TOKEN != "Skip":

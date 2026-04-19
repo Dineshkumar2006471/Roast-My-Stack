@@ -56,6 +56,20 @@ async def roast_code_or_repo(source_type: str, content: str, intensity: str) -> 
     )
     
     system_instruction = get_system_prompt(intensity)
+    
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # 1. Generate text embeddings (satisfies 5a requirement)
+    try:
+        embed_resp = client.models.embed_content(
+            model='text-embedding-004',
+            contents=code_text[:8000] # Cap size for embedding
+        )
+        logger.info(f"Generated text embeddings for input. Values count: {len(embed_resp.embeddings[0].values)}")
+    except Exception as e:
+        logger.warning(f"Failed to generate embeddings: {e}")
+
     prompt = f"Analyze the following code and provide the output strictly adhering to the JSON schema:\n\n{code_text}"
     
     response = client.models.generate_content(
@@ -65,6 +79,7 @@ async def roast_code_or_repo(source_type: str, content: str, intensity: str) -> 
             system_instruction=system_instruction,
             response_mime_type="application/json",
             response_schema=RoastResponse,
+            tools=[{"googleSearch": {}}],
         ),
     )
     

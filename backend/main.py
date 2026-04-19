@@ -92,6 +92,9 @@ async def create_roast(request: RoastRequest):
         return result
     except HTTPException:
         raise
+    except ValueError as e:
+        logger.warning(f"Validation error in roast generation: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Roast generation failed: {type(e).__name__}")
         raise HTTPException(status_code=500, detail="An error occurred while processing your request.")
